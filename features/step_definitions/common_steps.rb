@@ -1,0 +1,112 @@
+Given /^I set the following configuration for the tests:$/ do |table|
+  logs("I set the following configuration for the tests")
+  @config = table.rows_hash
+  logp("I set the following configuration for the tests")
+end
+
+
+Given /^I set the parameters for request as:$/ do |input|
+  logs("I set the parameters for request as:")
+  @requestparameters = Hash.new
+  @requestparameters = input.rows_hash
+  logp("I set the parameters for request as:")
+end
+
+
+
+Given /^I send (GET|POST|PUT|DELETE) request to "([^"]*)"(?: with the following:)?$/ do |*args|
+  @httpclient = MyHttpClient.new()
+  request_type = args.shift
+  path2 = args.shift
+  input = args.shift
+  stepname = "I send "+request_type+" request to \""+path2+"\" "
+  request_opts = {method: request_type.downcase.to_sym}
+  path,used = get_request_path(path2,@requestparameters)
+  unless input.nil?
+    if input.class == Cucumber::Ast::Table
+      inputparams = input.rows_hash
+      stepname = stepname +" with the following:"+inputparams.to_s
+      keys.each do |key|
+        mykey = key[0]
+        if inputparams.has_key?( mykey)
+          path = path.gsub("{"+mykey+"}", inputparams[mykey])
+          inputparams.delete mykey
+          used.push(mykey)
+        end
+      end
+      request_opts[:params] = input.rows_hash
+    else
+      request_opts[:input] = input
+    end
+  end
+  logs(stepname)
+  @httpclient.send_request(@config['API_ENDPOINT'],path,request_opts)
+  logp(stepname)  
+end
+
+Then /^the response status should be "([^"]*)"$/ do |status|
+  stepname = "the response status should be \""+status.to_s+"\""
+  logs(stepname)
+  if not @httpclient.last_response.code == status
+    pute("Expecting "+status.to_s+" Received="+@httpclient.last_response.code)
+    logf(stepname)
+    fail
+  else
+    logp(stepname)
+  end
+end
+
+Then /^the JSON response should (not)?\s?have "([^"]*)"$/ do |negative, json_path|
+  stepname = "the JSON response should "
+  json    = JSON.parse(@httpclient.last_response.body)
+  results = JsonPath.new(json_path).on(json).to_a.map(&:to_s)
+  if not negative.nil?
+    stepname = "not have \""+json_path+"\""
+    logs(stepname)
+    results.should be_empty
+  else
+    stepname = "have \""+json_path+"\""
+    logs(stepname)
+    results.should_not be_empty
+  end
+end
+
+Then /^the response should (not)?\s?contain "([^"]*)"$/ do |negative, content|
+  stepname = "the response should "
+  result = @httpclient.last_response.body.include?(content)
+  if negative.nil?
+    stepname = stepname+"not contain \""+content+"\""
+    logs(stepname)
+    fail if not @httpclient.last_response.body.include?(content)
+  else
+    stepname = stepname+"contain \""+content+"\""
+    logs(stepname)
+    fail if @httpclient.last_response.body.include?(content)
+  end
+  logp(stepname)
+end
+
+Then /^the JSON response should (not)?\s?have "([^"]*)" with the text "([^"]*)"$/ do |negative, json_path, text|
+  stepname = "the JSON response should "
+  json    = JSON.parse(@httpclient.last_response.body)
+  results = JsonPath.new(json_path).on(json).to_a.map(&:to_s)
+  if self.respond_to?(:should)
+    if not negative.nil?
+      stepname = stepname + "not have \""+json_path+"\" with the text \""+text+"\""
+      logs(stepname)
+      results.should_not include(text), "Expected #{text}, Got #{results}"
+    else
+      stepname = stepname + "have \""+json_path+"\" with the text \""+text+"\""
+      logs(stepname)
+      results.should include(text) , "Expected #{text}, Got #{results}"
+    end
+  else
+    if not negative.nil?
+      assert !results.include?(text), "Expected #{text}, Got #{results}"
+    else
+      assert results.include?(text), "Expected #{text}, Got #{results}"
+    end
+  end
+  logp (stepname)
+end
+
