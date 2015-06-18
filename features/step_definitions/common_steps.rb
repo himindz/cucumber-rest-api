@@ -8,6 +8,15 @@ Given /^I set the parameters for request as:$/ do |input|
   logs("I set the parameters for request as:")
   @requestparameters = Hash.new
   @requestparameters = input.rows_hash
+  @requestparameters.each do |key,value|
+    if value.include? "$."
+      puts "Substituting "+value
+      if not @last_json.nil?
+        results = JsonPath.new(value).on(@last_json).to_a.map(&:to_s)
+        puts "Results :"+results.to_s
+      end
+    end
+  end
   logp("I set the parameters for request as:")
 end
 
@@ -19,7 +28,9 @@ Given /^I set the headers for requests as:$/ do |input|
 end
 
 Given /^I send (GET|POST|PUT|DELETE) request to "([^"]*)"(?: with the following:)?$/ do |*args|
+
   @httpclient = MyHttpClient.new()
+  @last_json = nil?
   if @config.nil?
     @config = Hash.new
   end
@@ -39,6 +50,10 @@ Given /^I send (GET|POST|PUT|DELETE) request to "([^"]*)"(?: with the following:
     if input.class == Cucumber::Ast::Table
       inputparams = input.rows_hash
       stepname = stepname +" with the following:"+inputparams.to_s
+      if inputparams.has_key?("body")
+        request_opts[:input] = inputparams['body']
+        inputparams.delete('body')
+      end
       request_opts[:params] = inputparams
     else
       request_opts[:input] = input
@@ -50,8 +65,18 @@ Given /^I send (GET|POST|PUT|DELETE) request to "([^"]*)"(?: with the following:
   logs(stepname)
   if not ENV['API_ENDPOINT'].nil?
     @config['API_ENDPOINT'] = ENV['API_ENDPOINT']
+  else
+    pute "No API EndPoint provided."
+    logf stepname
+    fail
   end
+  logs request_opts.to_s
   @httpclient.send_request(@config['API_ENDPOINT'],path,request_opts)
+  @last_response = @httpclient.last_response
+  if not @last_response.body.nil?
+    @last_json    = JSON.parse(@last_response.body)
+  end
+
   logp(stepname)
 end
 
@@ -60,8 +85,13 @@ Given /^the response status should be "([^"]*)"$/ do |status|
   logs(stepname)
   if not @httpclient.last_response.code == status
     pute("Expecting "+status.to_s+" Received="+@httpclient.last_response.code)
+    if not @last_response.body.nil?
+      pute "--------Last Response--------"
+      pute @last_response.body
+      pute "-----------------------------"
+    end
     logf(stepname)
-    fail ("Expecting "+status.to_s+" Received="+@httpclient.last_response.code) 
+    fail ("Expecting "+status.to_s+" Received="+@httpclient.last_response.code)
   else
     logp(stepname)
   end

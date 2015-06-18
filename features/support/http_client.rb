@@ -33,6 +33,8 @@ class MyHttpClient
   end
 
   def send_request(server,path,request_opts)
+    puts "Server = "+server
+    putg "path="+path
     req = server + path
     uri = URI.parse(req)
 
@@ -83,6 +85,8 @@ class MyHttpClient
 
   def create_request(uri,request_opts)
     body = nil
+    putg "-------------------------------------"
+    logs request_opts.to_s
     case request_opts[:method]
     when :get
       request = Net::HTTP::Get.new(uri.request_uri)
@@ -90,12 +94,13 @@ class MyHttpClient
       request = Net::HTTP::Delete.new(uri.request_uri)
     when :post
       request = Net::HTTP::Post.new(uri.request_uri)
-      if request_opts[:params]
+      if request_opts[:input]
+        body = request_opts[:input]
+        putg body.to_s
+      else
         parameters = unescape_json(request_opts[:params])
         body = parameters
         body = body.gsub("\"[","[").gsub("]\"","]")
-      else
-        body = request_opts[:input]
       end
     when :put
       request = Net::HTTP::Put.new(uri.request_uri)
