@@ -23,6 +23,6 @@ Given /^I execute '(.*)' concurrent threads for '(.*)' iterations using:$/ do |t
   runtest(threads,loops)
 end
 
-Given /^the average response time should be less than (\d+) seconds$/ do
+Given /^the average response time should be less than 2 seconds$/ do
 
 end

@@ -37,6 +37,7 @@ def get_request_path(path,requestparameters)
     end
   end
 #Append remaining parameters
+  
   requestparameters.each do |key, value|
     if not used.include? key and not key.include?"Cookie"
       if not path.include?"\?"

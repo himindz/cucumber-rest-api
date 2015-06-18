@@ -4,7 +4,6 @@ Given /^I set the following configuration for the tests:$/ do |table|
   logp("I set the following configuration for the tests")
 end
 
-
 Given /^I set the parameters for request as:$/ do |input|
   logs("I set the parameters for request as:")
   @requestparameters = Hash.new
@@ -12,10 +11,24 @@ Given /^I set the parameters for request as:$/ do |input|
   logp("I set the parameters for request as:")
 end
 
-
+Given /^I set the headers for requests as:$/ do |input|
+  logs("I set the headers for requests as:")
+  @requestheaders = Hash.new
+  @requestheaders = input.rows_hash
+  logp("I set the headers for requests as:")
+end
 
 Given /^I send (GET|POST|PUT|DELETE) request to "([^"]*)"(?: with the following:)?$/ do |*args|
   @httpclient = MyHttpClient.new()
+  if @config.nil?
+    @config = Hash.new
+  end
+  if @requestparameters.nil?
+    @requestparameters = Hash.new
+  end
+  if @requestheaders.nil?
+    @requestheaders = Hash.new
+  end
   request_type = args.shift
   path2 = args.shift
   input = args.shift
@@ -26,31 +39,29 @@ Given /^I send (GET|POST|PUT|DELETE) request to "([^"]*)"(?: with the following:
     if input.class == Cucumber::Ast::Table
       inputparams = input.rows_hash
       stepname = stepname +" with the following:"+inputparams.to_s
-      keys.each do |key|
-        mykey = key[0]
-        if inputparams.has_key?( mykey)
-          path = path.gsub("{"+mykey+"}", inputparams[mykey])
-          inputparams.delete mykey
-          used.push(mykey)
-        end
-      end
-      request_opts[:params] = input.rows_hash
+      request_opts[:params] = inputparams
     else
       request_opts[:input] = input
     end
   end
+  @requestheaders.each { |key,value|
+    @httpclient.header(key,value)
+  }
   logs(stepname)
+  if not ENV['API_ENDPOINT'].nil?
+    @config['API_ENDPOINT'] = ENV['API_ENDPOINT']
+  end
   @httpclient.send_request(@config['API_ENDPOINT'],path,request_opts)
-  logp(stepname)  
+  logp(stepname)
 end
 
-Then /^the response status should be "([^"]*)"$/ do |status|
+Given /^the response status should be "([^"]*)"$/ do |status|
   stepname = "the response status should be \""+status.to_s+"\""
   logs(stepname)
   if not @httpclient.last_response.code == status
     pute("Expecting "+status.to_s+" Received="+@httpclient.last_response.code)
     logf(stepname)
-    fail
+    fail ("Expecting "+status.to_s+" Received="+@httpclient.last_response.code) 
   else
     logp(stepname)
   end

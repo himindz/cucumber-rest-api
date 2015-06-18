@@ -23,7 +23,7 @@ class MyHttpClient
     end
     @headers[key] = value
   end
-  
+
   def headers
     @headers
   end
@@ -46,12 +46,39 @@ class MyHttpClient
     if req.include? "https"
       http.use_ssl = true
       http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-      
+
       @response = http.request(request,body)
-      
+
     else
       @response = http.request(request,body)
     end
+  end
+
+  UNESCAPES = {
+    'a' => "\x07", 'b' => "\x08", 't' => "\x09",
+    'n' => "\x0a", 'v' => "\x0b", 'f' => "\x0c",
+    'r' => "\x0d", 'e' => "\x1b", "\\\\" => "\x5c",
+    "\"" => "\x22", "'" => "\x27"
+  }
+
+  def unescape(str)
+    # Escape all the things
+    str.gsub(/\\(?:([#{UNESCAPES.keys.join}])|u([\da-fA-F]{4}))|\\0?x([\da-fA-F]{2})/) {
+      if $1
+        if $1 == '\\' then '\\' else UNESCAPES[$1] end
+      elsif $2 # escape \u0000 unicode
+        ["#$2".hex].pack('U*')
+      elsif $3 # escape \0xff or \xff
+        [$3].pack('H2')
+      end
+    }
+  end
+
+  def unescape_json(parameters)
+    putg parameters.to_s
+    putg unescape(parameters.to_json.to_s)
+
+    return unescape(parameters.to_json.gsub('"{','{').gsub('}"','}'))
   end
 
   def create_request(uri,request_opts)
@@ -63,10 +90,10 @@ class MyHttpClient
       request = Net::HTTP::Delete.new(uri.request_uri)
     when :post
       request = Net::HTTP::Post.new(uri.request_uri)
-      if :params
-        body = request_opts[:params].to_json
+      if request_opts[:params]
+        parameters = unescape_json(request_opts[:params])
+        body = parameters
         body = body.gsub("\"[","[").gsub("]\"","]")
-        body = body.gsub("\"444\"","444")
       else
         body = request_opts[:input]
       end
@@ -74,17 +101,16 @@ class MyHttpClient
       request = Net::HTTP::Put.new(uri.request_uri)
       body = nil
       if request_opts[:params]
-        body = request_opts[:params].to_json
+        parameters = unescape_json(request_opts[:params])
+        body = parameters
         body = body.gsub("\"[","[").gsub("]\"","]")
-        body = body.gsub("\"444\"","444")
       else
         body = request_opts[:input]
       end
     end
     putb "URI="+uri.to_s
-    #putb "Request created="+body.to_s
-    
+    putb "Request created="+body.to_s
     return request, body
   end
-  
+
 end
