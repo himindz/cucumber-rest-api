@@ -3,7 +3,7 @@ require 'optparse'
 
 options = {}
 OptionParser.new do |opts|
-  opts.banner = "Usage: generate_features.rb [options]"
+  opts.banner = "Usage: generate_features_simple.rb [options]"
 
   opts.on('-t', '--tags TAGS', 'Tags') { |v| options[:tags] = v }
   opts.on('-f', '--featurename FEATURENAME', 'Feature Name') { |v| options[:featurename] = v }
