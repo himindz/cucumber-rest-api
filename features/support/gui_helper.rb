@@ -1,5 +1,23 @@
 require 'colorize'
 
+
+def setCookie(type)
+  if type == "valid"
+    @httpclient.header("Cookie",@authed_cookie)
+    @httpclient.header("Accept","application/json")
+    @httpclient.header("Content-Type","application/json")
+
+    #putb "Headers ="+@httpclient.headers.to_s
+  end
+  if type == "invalid"
+    @httpclient.header("Cookie","iPlanetDirectoryProuat=badtoken")
+    @httpclient.header("Accept","application/json")
+    @httpclient.header("Content-Type","application/json")
+
+    #putb "Headers ="+@httpclient.headers.to_s
+  end
+end
+
 def append_request_parameters(path,requestparameters)
   used = Array.new
   keys = Array.new
@@ -135,6 +153,26 @@ def logc(o)
   Kernel.puts  msg.blue
 end
 
+def save_last_response(response)
+  path = Dir.pwd.to_s
+  filename = path+'/last_response.j'
+  file = File.open(filename, 'w')  
+  file.puts response  
+end
+
+def last_response_exists
+  path = Dir.pwd.to_s
+  filename = path+'/scenarioinfo.j'
+  return File.exist?(filename) 
+end
+def read_last_response()
+  path = Dir.pwd.to_s
+  filename = path+'/last_response.j'
+  file = File.open(filename, 'rb')  
+  contents = file.read
+  file.close
+  return contents  
+end
 def running_bg_steps
   path = Dir.pwd.to_s
   filename = path+'/scenarioinfo.j'

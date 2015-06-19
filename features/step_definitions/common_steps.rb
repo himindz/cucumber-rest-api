@@ -10,10 +10,14 @@ Given /^I set the parameters for request as:$/ do |input|
   @requestparameters = input.rows_hash
   @requestparameters.each do |key,value|
     if value.include? "$."
-      puts "Substituting "+value
+      if last_response_exists()
+        @last_json = JSON.parse(read_last_response())
+      end
       if not @last_json.nil?
         results = JsonPath.new(value).on(@last_json).to_a.map(&:to_s)
-        puts "Results :"+results.to_s
+        @requestparameters[key] = results[0]
+      else
+        pute "Last JSON is null"
       end
     end
   end
@@ -28,9 +32,8 @@ Given /^I set the headers for requests as:$/ do |input|
 end
 
 Given /^I send (GET|POST|PUT|DELETE) request to "([^"]*)"(?: with the following:)?$/ do |*args|
-
   @httpclient = MyHttpClient.new()
-  @last_json = nil?
+  @last_json = nil
   if @config.nil?
     @config = Hash.new
   end
@@ -65,18 +68,22 @@ Given /^I send (GET|POST|PUT|DELETE) request to "([^"]*)"(?: with the following:
   logs(stepname)
   if not ENV['API_ENDPOINT'].nil?
     @config['API_ENDPOINT'] = ENV['API_ENDPOINT']
-  else
+  elsif @config['API_ENDPOINT'].nil?
     pute "No API EndPoint provided."
     logf stepname
     fail
   end
   logs request_opts.to_s
+  setCookie(@requestparameters['Cookie'])
+
   @httpclient.send_request(@config['API_ENDPOINT'],path,request_opts)
   @last_response = @httpclient.last_response
   if not @last_response.body.nil?
     @last_json    = JSON.parse(@last_response.body)
+    save_last_response(@last_response.body)
   end
-
+  pute @last_json.to_s
+  putb @last_response.body.to_s
   logp(stepname)
 end
 
