@@ -159,7 +159,7 @@ def save_last_response(sname,response,indexed=true)
   file.puts response
   file.close
 
-  if indexed?
+  if indexed
     existing_files = Dir[path+'/'+sname+'*']
 
     index = 1

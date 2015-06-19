@@ -30,7 +30,7 @@ Given /^I set the parameters for request as:$/ do |input|
         @requestparameters[key] = results[0]
       end
     end
-    if key.include? "stepname"
+    if key.eql? "reqname"
       @sname = value
     end
 
