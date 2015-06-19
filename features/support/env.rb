@@ -3,7 +3,7 @@ require 'jsonpath'
 require 'rspec'
 require 'rubygems'
 require 'ruby-jmeter'
-
+require 'digest/md5'
 
 RSpec.configure do |config|
   # ...

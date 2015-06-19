@@ -9,17 +9,31 @@ Given /^I set the parameters for request as:$/ do |input|
   @requestparameters = Hash.new
   @requestparameters = input.rows_hash
   @requestparameters.each do |key,value|
-    if value.include? "$."
+    if value.start_with? "$."
       if last_response_exists()
         @last_json = JSON.parse(read_last_response())
       end
       if not @last_json.nil?
         results = JsonPath.new(value).on(@last_json).to_a.map(&:to_s)
         @requestparameters[key] = results[0]
-      else
-        pute "Last JSON is null"
       end
     end
+    if value.start_with? "#"
+      sname, v = value.match(/#(.*)#(.*)/i).captures
+      pute "sname="+sname
+      pute "v="+v
+      if response_exists(sname)
+        res_json = JSON.parse(read_response(sname))
+      end
+      if not res_json.nil?
+        results = JsonPath.new(v).on(res_json).to_a.map(&:to_s)
+        @requestparameters[key] = results[0]
+      end
+    end
+    if key.include? "stepname"
+      @sname = value
+    end
+
   end
   logp("I set the parameters for request as:")
 end
@@ -33,7 +47,6 @@ end
 
 Given /^I send (GET|POST|PUT|DELETE) request to "([^"]*)"(?: with the following:)?$/ do |*args|
   @httpclient = MyHttpClient.new()
-  @last_json = nil
   if @config.nil?
     @config = Hash.new
   end
@@ -46,6 +59,12 @@ Given /^I send (GET|POST|PUT|DELETE) request to "([^"]*)"(?: with the following:
   request_type = args.shift
   path2 = args.shift
   input = args.shift
+  indexed=false
+  if @sname.nil?
+    @sname = Digest::MD5.hexdigest(request_type+":"+path2)
+    indexed=true
+  end
+  pute @sname
   stepname = "I send "+request_type+" request to \""+path2+"\" "
   request_opts = {method: request_type.downcase.to_sym}
   path,used = get_request_path(path2,@requestparameters)
@@ -73,17 +92,14 @@ Given /^I send (GET|POST|PUT|DELETE) request to "([^"]*)"(?: with the following:
     logf stepname
     fail
   end
-  logs request_opts.to_s
   setCookie(@requestparameters['Cookie'])
 
   @httpclient.send_request(@config['API_ENDPOINT'],path,request_opts)
   @last_response = @httpclient.last_response
   if not @last_response.body.nil?
     @last_json    = JSON.parse(@last_response.body)
-    save_last_response(@last_response.body)
+    save_last_response(@sname,@last_response.body,indexed)
   end
-  pute @last_json.to_s
-  putb @last_response.body.to_s
   logp(stepname)
 end
 

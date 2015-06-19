@@ -1,6 +1,5 @@
 require 'colorize'
 
-
 def setCookie(type)
   if type == "valid"
     @httpclient.header("Cookie",@authed_cookie)
@@ -54,8 +53,8 @@ def get_request_path(path,requestparameters)
 
     end
   end
-#Append remaining parameters
-  
+  #Append remaining parameters
+
   requestparameters.each do |key, value|
     if not used.include? key and not key.include?"Cookie"
       if not path.include?"\?"
@@ -153,26 +152,62 @@ def logc(o)
   Kernel.puts  msg.blue
 end
 
-def save_last_response(response)
+def save_last_response(sname,response,indexed=true)
   path = Dir.pwd.to_s
   filename = path+'/last_response.j'
-  file = File.open(filename, 'w')  
-  file.puts response  
+  file = File.open(filename, 'w')
+  file.puts response
+  file.close
+
+  if indexed?
+    existing_files = Dir[path+'/'+sname+'*']
+
+    index = 1
+    if existing_files.length > 0
+      index = existing_files.length+index
+    end
+    filename = path+'/'+sname+'_'+index.to_s+'.j'
+  else
+    filename = path+'/'+sname+'.j'
+  end
+
+  file = File.open(filename, 'w')
+  file.puts response
+  file.close
+
 end
 
 def last_response_exists
   path = Dir.pwd.to_s
-  filename = path+'/scenarioinfo.j'
-  return File.exist?(filename) 
+  filename = path+'/last_response.j'
+  return File.exist?(filename)
 end
+
+def response_exists(sname)
+  path = Dir.pwd.to_s
+  filename = path+'/'+sname+'.j'
+  return File.exist?(filename)
+
+end
+
+def read_response(sname)
+  path = Dir.pwd.to_s
+  filename = path+'/'+sname+'.j'
+  file = File.open(filename, 'rb')
+  contents = file.read
+  file.close
+  return contents
+end
+
 def read_last_response()
   path = Dir.pwd.to_s
   filename = path+'/last_response.j'
-  file = File.open(filename, 'rb')  
+  file = File.open(filename, 'rb')
   contents = file.read
   file.close
-  return contents  
+  return contents
 end
+
 def running_bg_steps
   path = Dir.pwd.to_s
   filename = path+'/scenarioinfo.j'
