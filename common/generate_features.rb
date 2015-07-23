@@ -50,6 +50,7 @@ if not options[:featurename].nil?
   newfile.puts("")
 
   #Write the new scenarios
+  newfile.puts(options[:tags])
   newfile.puts(options[:scenario])
   newfile.puts("")
 

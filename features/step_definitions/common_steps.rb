@@ -97,7 +97,10 @@ Given /^I send (GET|POST|PUT|DELETE) request to "([^"]*)"(?: with the following:
   @httpclient.send_request(@config['API_ENDPOINT'],path,request_opts)
   @last_response = @httpclient.last_response
   if not @last_response.body.nil?
-    @last_json    = JSON.parse(@last_response.body)
+    begin
+       @last_json    = JSON.parse(@last_response.body)
+    rescue
+    end
     save_last_response(@sname,@last_response.body,indexed)
   end
   logp(stepname)
@@ -122,16 +125,23 @@ end
 
 Then /^the JSON response should (not)?\s?have "([^"]*)"$/ do |negative, json_path|
   stepname = "the JSON response should "
-  json    = JSON.parse(@httpclient.last_response.body)
-  results = JsonPath.new(json_path).on(json).to_a.map(&:to_s)
-  if not negative.nil?
-    stepname = "not have \""+json_path+"\""
-    logs(stepname)
-    results.should be_empty
-  else
-    stepname = "have \""+json_path+"\""
-    logs(stepname)
-    results.should_not be_empty
+  begin
+  	json    = JSON.parse(@httpclient.last_response.body)
+  	results = JsonPath.new(json_path).on(json).to_a.map(&:to_s)
+  	if not negative.nil?
+    		stepname += "not have \""+json_path+"\""
+    		logs(stepname)
+    		results.should be_empty
+  	else
+    		stepname += "have \""+json_path+"\""
+    		logs(stepname)
+    		putb @httpclient.last_response.body
+    		results.should_not be_empty
+  	end
+  rescue
+    puts "Response: "+@httpclient.last_response.body
+    pute "Invalid JSON in response"
+    fail
   end
 end
 
@@ -152,25 +162,31 @@ end
 
 Then /^the JSON response should (not)?\s?have "([^"]*)" with the text "([^"]*)"$/ do |negative, json_path, text|
   stepname = "the JSON response should "
-  json    = JSON.parse(@httpclient.last_response.body)
-  results = JsonPath.new(json_path).on(json).to_a.map(&:to_s)
-  if self.respond_to?(:should)
-    if not negative.nil?
-      stepname = stepname + "not have \""+json_path+"\" with the text \""+text+"\""
-      logs(stepname)
-      results.should_not include(text), "Expected #{text}, Got #{results}"
-    else
-      stepname = stepname + "have \""+json_path+"\" with the text \""+text+"\""
-      logs(stepname)
-      results.should include(text) , "Expected #{text}, Got #{results}"
-    end
-  else
-    if not negative.nil?
-      assert !results.include?(text), "Expected #{text}, Got #{results}"
-    else
-      assert results.include?(text), "Expected #{text}, Got #{results}"
-    end
+  begin
+  	json    = JSON.parse(@httpclient.last_response.body)
+  	results = JsonPath.new(json_path).on(json).to_a.map(&:to_s)
+  	if self.respond_to?(:should)
+    		if not negative.nil?
+      			stepname = stepname + "not have \""+json_path+"\" with the text \""+text+"\""
+      			logs(stepname)
+      			results.should_not include(text), "Expected #{text}, Got #{results}"
+    		else
+      			stepname = stepname + "have \""+json_path+"\" with the text \""+text+"\""
+      			logs(stepname)
+      			results.should include(text) , "Expected #{text}, Got #{results}"
+    		end
+  	else
+    		if not negative.nil?
+      			assert !results.include?(text), "Expected #{text}, Got #{results}"
+    		else
+      			assert results.include?(text), "Expected #{text}, Got #{results}"
+    		end
+  	end
+  	logp (stepname)
+  rescue
+      puts "Response: "+@httpclient.last_response.body
+      pute "Invalid JSON in response"
+      fail
   end
-  logp (stepname)
 end
 

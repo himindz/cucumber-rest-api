@@ -1,1 +1,3 @@
 .project
+*.html
+features/step_definitions/custom_steps.rb
