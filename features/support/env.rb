@@ -4,6 +4,7 @@ require 'rspec'
 require 'rubygems'
 require 'ruby-jmeter'
 require 'digest/md5'
+require 'pp'
 
 RSpec.configure do |config|
   # ...

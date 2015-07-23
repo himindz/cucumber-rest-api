@@ -130,25 +130,25 @@ end
 
 def logs(o)
   timenow = Time.now
-  msg = "*********** "+timenow.to_s+" OUT: Step:"+o.to_s+"   :Started *********"
+  msg = "\n===================================\n"+timenow.to_s+" OUT: Step:"+o.to_s+"   :Started"
   Kernel.puts msg.blue
 end
 
 def logf(o)
   timenow = Time.now
-  msg = "*********** "+timenow.to_s+" OUT: Step:"+o.to_s+"   :FAILED *********"
+  msg = timenow.to_s+" OUT: Step:"+o.to_s+"   :FAILED"+"\n===================================\n"
   Kernel.puts msg.red
 end
 
 def logp(o)
   timenow = Time.now
-  msg = "*********** "+timenow.to_s+" OUT: Step:"+o.to_s+"   :PASSED *********"
+  msg = timenow.to_s+" OUT: Step:"+o.to_s+"   :PASSED"
   Kernel.puts  msg.green
 end
 
 def logc(o)
   timenow = Time.now
-  msg = "*********** "+timenow.to_s+" OUT: Step:"+o.to_s+"   :Completed *********"
+  msg = timenow.to_s+" OUT: Step:"+o.to_s+"   :Completed"+"\n===================================\n"
   Kernel.puts  msg.blue
 end
 
@@ -158,10 +158,8 @@ def save_last_response(sname,response,indexed=true)
   file = File.open(filename, 'w')
   file.puts response
   file.close
-
   if indexed
     existing_files = Dir[path+'/'+sname+'*']
-
     index = 1
     if existing_files.length > 0
       index = existing_files.length+index
@@ -170,11 +168,9 @@ def save_last_response(sname,response,indexed=true)
   else
     filename = path+'/'+sname+'.j'
   end
-
   file = File.open(filename, 'w')
   file.puts response
   file.close
-
 end
 
 def last_response_exists

@@ -85,8 +85,6 @@ class MyHttpClient
 
   def create_request(uri,request_opts)
     body = nil
-    putg "-------------------------------------"
-    logs request_opts.to_s
     case request_opts[:method]
     when :get
       request = Net::HTTP::Get.new(uri.request_uri)
@@ -114,7 +112,11 @@ class MyHttpClient
       end
     end
     putb "URI="+uri.to_s
-    putb "Request created="+body.to_s
+    if not body.nil? and body.to_s.length >0
+      putb "Request Body="+body.to_s
+      putb "Request Body Length="+body.to_s.length.to_s
+            
+    end
     return request, body
   end
 
