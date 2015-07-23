@@ -9,15 +9,19 @@ def replacePlaceHolders(input_hash)
         input_hash[key] = results[0]
       end
     end
-    if value.start_with? "#"
-      sname, v = value.match(/#(.*)#(.*)/i).captures
-      if response_exists(sname)
-        res_json = JSON.parse(read_response(sname))
+    begin
+      prefix,sname, v = value.match(/(.*)#(.*)#(.*)/i).captures
+      if not v.nil?
+        pute v
+        if response_exists(sname)
+          res_json = JSON.parse(read_response(sname))
+        end
+        if not res_json.nil?
+          results = JsonPath.new(v).on(res_json).to_a.map(&:to_s)
+          input_hash[key] = prefix+results[0]
+        end
       end
-      if not res_json.nil?
-        results = JsonPath.new(v).on(res_json).to_a.map(&:to_s)
-        input_hash[key] = results[0]
-      end
+    rescue
     end
   end
   return input_hash
@@ -50,7 +54,7 @@ Given /^I set the headers for requests as:$/ do |input|
   @requestheaders = Hash.new
   @requestheaders = input.rows_hash
   logs("I set the headers for requests as:\n"+PP.pp(@requestheaders," "))
-  @requestheaders = replacePlaceHolders(@requestheaders)  
+  @requestheaders = replacePlaceHolders(@requestheaders)
   logp("I set the headers for requests as:\n"+PP.pp(@requestheaders," "))
 end
 
