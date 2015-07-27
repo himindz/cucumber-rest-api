@@ -143,12 +143,26 @@ Then /^the JSON response should (not)?\s?have "([^"]*)"$/ do |negative, json_pat
     if not negative.nil?
       stepname += "not have \""+json_path+"\""
       logs(stepname)
-      results.should be_empty
+      begin
+        results.should be_empty
+      rescue Exception => e
+        pute e.message
+        logf(stepname)
+        fail
+      end
+
     else
       stepname += "have \""+json_path+"\""
       logs(stepname)
       putb @httpclient.last_response.body
-      results.should_not be_empty
+      begin
+        results.should_not be_empty
+      rescue Exception => e
+        pute e.message
+        logf(stepname)
+        fail
+      end
+
     end
   rescue
     puts "Response: "+@httpclient.last_response.body
@@ -163,11 +177,18 @@ Then /^the response should (not)?\s?contain "([^"]*)"$/ do |negative, content|
   if negative.nil?
     stepname = stepname+"not contain \""+content+"\""
     logs(stepname)
-    fail if not @httpclient.last_response.body.include?(content)
+    if not @httpclient.last_response.body.include?(content)
+      logf(stepname)
+      fail
+    end
   else
     stepname = stepname+"contain \""+content+"\""
     logs(stepname)
-    fail if @httpclient.last_response.body.include?(content)
+    if @httpclient.last_response.body.include?(content)
+      logf(stepname)
+      fail
+    end
+
   end
   logp(stepname)
 end
@@ -181,22 +202,49 @@ Then /^the JSON response should (not)?\s?have "([^"]*)" with the text "([^"]*)"$
       if not negative.nil?
         stepname = stepname + "not have \""+json_path+"\" with the text \""+text+"\""
         logs(stepname)
-        results.should_not include(text), "Expected #{text}, Got #{results}"
+        begin
+          results.should_not include(text), "Expected #{text}, Got #{results}"
+        rescue Exception => e
+          pute e.message
+          logf(stepname)
+          fail
+        end
+
       else
         stepname = stepname + "have \""+json_path+"\" with the text \""+text+"\""
         logs(stepname)
-        results.should include(text) , "Expected #{text}, Got #{results}"
+        begin
+          results.should include(text) , "Expected #{text}, Got #{results}"
+        rescue Exception => e
+          pute e.message
+          logf(stepname)
+          fail
+        end
       end
     else
       if not negative.nil?
-        assert !results.include?(text), "Expected #{text}, Got #{results}"
+        begin
+          assert !results.include?(text), "Expected #{text}, Got #{results}"
+        rescue Exception => e
+          pute e.message
+          logf(stepname)
+          fail
+        end
+
       else
-        assert results.include?(text), "Expected #{text}, Got #{results}"
+        begin
+          assert results.include?(text), "Expected #{text}, Got #{results}"
+        rescue Exception => e
+          pute e.message
+          logf(stepname)
+          fail
+        end
+
       end
     end
     logp (stepname)
   rescue
-    puts "Response: "+@httpclient.last_response.body
+    pute "Response: "+@httpclient.last_response.body
     pute "Invalid JSON in response"
     fail
   end
